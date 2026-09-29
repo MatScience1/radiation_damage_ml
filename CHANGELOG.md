@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic
 Versioning. Each task in this repository increments the version.
 
+## [0.5.0] - 2026-09-29
+
+Project narrative and README rewrite.
+
+### Changed
+- `README.md`: rewritten to explain the project goal and scientific
+  motivation, the current MVP scope, an implementation diagram, the data flow,
+  the roadmap, and separate strengths and limitations sections. Added a mermaid
+  flowchart of the pipeline stages and marked planned stages explicitly.
+
+### Fixed
+- `.pre-commit-config.yaml`: the mypy hook now installs `pytest` so fixture
+  decorators are typed in the hook environment.
+- `mypy.ini`: added `disallow_untyped_decorators = False` to `[mypy-tests.*]`
+  so pytest fixture functions are accepted under the strict decorator check.
+
+### Notes
+- Documentation only for the source pipeline. No source, test, or runtime
+  behaviour changed.
+
 ## [0.4.0] - 2026-09-29
 
 Enterprise hardening: CI, pre-commit, static typing, packaging, benchmarks.

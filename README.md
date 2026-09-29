@@ -1,45 +1,63 @@
 # Radiation Damage ML Pipeline
 
-A pipeline that loads a crystalline structure and generates a single-vacancy
-defect from it. This is the foundation for a larger effort to build graph
-neural network training datasets for radiation damage in crystalline
-materials.
+A Python pipeline that turns crystalline structures into labelled point-defect
+datasets for training graph neural networks (GNNs) to predict radiation
+damage.
 
-## Development status
+## Why this exists
 
-MVP. Two stages are implemented and covered by a 32-test suite. The pipeline
-is a correct, self-contained baseline, but it does not yet produce energies,
-forces, or graph datasets.
+Radiation damage in structural materials is driven by point defects: vacancies
+and interstitials created when energetic particles displace atoms. Predicting
+how these defects form and migrate with first-principles methods is accurate
+but far too slow to scan the vast space of alloys and defect configurations.
 
-## Structure
+A machine-learned interatomic potential or GNN needs large, physically
+consistent datasets of structures labelled with energies and forces. Those
+datasets are expensive to assemble by hand. This project automates the
+generation of such datasets: it takes a bulk crystal, applies controlled
+defects, evaluates them, and exports graph tensors ready for training.
 
+The long-term target system is the refractory high-entropy alloy family
+W-Mo-Nb-Zr-Ti-Ta, where radiation tolerance is of direct engineering interest.
+
+## What is implemented today
+
+This repository is at the MVP stage. It implements the first two pipeline
+steps end to end and is fully tested. It reads a local crystal structure,
+builds a supercell, removes one atom to create a vacancy, and writes the
+defective structure and its metadata to disk.
+
+It does not yet compute energies or forces, and it does not yet build graphs.
+Those steps are planned (see the roadmap).
+
+```mermaid
+flowchart LR
+    A["materials/Al.cif<br/>bulk crystal"] --> B["Stage 1<br/>LocalDataMiner"]
+    B --> C["data/raw_structures<br/>aluminum.cif + aluminum.json"]
+    C --> D["Stage 2<br/>SimpleDefectEngine"]
+    D --> E["data/defect_structures<br/>aluminum_vacancy.extxyz + .json"]
+    E -.planned.-> F["Stage 3<br/>evaluate energy and forces"]
+    F -.planned.-> G["Stage 4<br/>build GNN graph tensors"]
+    G -.planned.-> H["Stage 5<br/>storage and data loaders"]
 ```
-radiation_damage_ml/
-├── pipeline/
-│   ├── config.py                      # configuration dataclasses
-│   ├── stage01_data_mining.py         # local CIF loading
-│   └── stage02_defect_engineering.py  # supercell and single vacancy
-├── materials/Al.cif                   # sample aluminium FCC input
-├── tests/                             # unit, integration, end-to-end tests
-├── outputs/RESULTS_DESCRIPTION.txt    # output reference
-├── run_pipeline.py                    # orchestrator (stage 1 then stage 2)
-├── requirements.txt                   # runtime dependencies
-├── requirements-dev.txt               # test dependencies
-└── CHANGELOG.md
-```
 
-Data flow:
+## How it works
 
-```
-materials/Al.cif ──► Stage 1 (LocalDataMiner) ──► data/raw_structures/
-                                                      │
-                                                      ▼
-                       data/defect_structures/ ◄── Stage 2 (SimpleDefectEngine)
-```
+- Stage 1, data input. [`LocalDataMiner`](pipeline/stage01_data_mining.py)
+  reads the configured CIF, writes a normalised copy to
+  `data/raw_structures/`, and records lattice parameters, atom count, and
+  formula in a JSON sidecar. A local file is used so the pipeline has no
+  external service dependency.
+- Stage 2, defect engineering.
+  [`SimpleDefectEngine`](pipeline/stage02_defect_engineering.py) expands the
+  cell into a supercell, removes one atom at a configured index, and writes an
+  extended XYZ file plus a JSON sidecar to `data/defect_structures/`.
+- Orchestration. [`run_pipeline.py`](run_pipeline.py) runs the stages in order
+  and creates the directory tree.
 
-Stage 1 reads the configured CIF, writes a normalised CIF and a JSON metadata
-sidecar. Stage 2 builds a supercell, removes one atom, and writes an extXYZ
-file and a JSON sidecar.
+All paths are anchored to the project root, so the pipeline behaves the same
+regardless of the working directory, and all configuration lives in
+[`pipeline/config.py`](pipeline/config.py) as dataclasses.
 
 ## Quick start
 
@@ -50,7 +68,7 @@ pip install -r requirements.txt
 python run_pipeline.py
 ```
 
-Expected outputs:
+Expected output:
 
 ```
 data/raw_structures/aluminum.cif
@@ -59,99 +77,53 @@ data/defect_structures/aluminum_vacancy.extxyz
 data/defect_structures/aluminum_vacancy.json
 ```
 
-Configuration lives in [`pipeline/config.py`](pipeline/config.py) in the
-`MVPConfig` dataclass: input file, supercell size, vacancy index, and output
-paths. All paths are anchored to the project root, so the pipeline runs from
-any working directory.
+Change `MVPConfig.material_file` and related fields in
+[`pipeline/config.py`](pipeline/config.py) to use a different material,
+supercell size, or vacancy index.
 
-## Strengths
+## Where it is going
 
-- Minimal dependency set (numpy, ase, torch) and no external data source.
-- Deterministic layout anchored to the project root rather than the current
-  working directory.
-- Clear separation between stages, each self-contained and independently
-  testable.
-- Explicit error handling with actionable messages.
-- Test suite organised by the test pyramid with coverage reporting.
+- V1, realistic energetics. LAMMPS with an ADP potential to produce energies
+  and forces, additional defect types (divacancy, interstitial), graph
+  transformation to PyTorch Geometric, and LMDB or HDF5 storage.
+- V2, near-DFT accuracy. GRACE or MACE machine-learning interatomic potentials
+  and Materials Project integration for bulk structures.
+- V3, scale. A full defect catalogue, parallel evaluation, and streaming data
+  loaders for training on large datasets.
 
-## Weaknesses
+## Strengths and limitations
 
-- One material and one defect type (single vacancy) only.
-- No energy, force, or formation-energy evaluation.
-- No graph dataset or training-ready output.
-- End-to-end tests write into the repository `data/` directory.
-- No continuous integration configuration yet.
+Strengths:
 
-## Roadmap
+- Minimal dependencies (numpy, ase, torch) and no external data source.
+- Deterministic, project-root-anchored paths and a clear stage separation.
+- 63 tests across unit, integration, and end to end layers, with static typing
+  (mypy), linting (ruff), formatting (black, isort), and CI.
+- Reproducible output, verified byte-for-byte for the CIF stage.
 
-- V1: LAMMPS with an ADP potential for energies and forces, additional defect
-  types (divacancy, interstitial), graph transformation to PyTorch Geometric,
-  and LMDB or HDF5 storage.
-- V2: GRACE or MACE machine-learning interatomic potentials, Materials Project
-  integration, and thermal displacement snapshots.
-- V3: Full defect catalogue, large-scale parallel evaluation, and streaming
-  dataloaders.
+Limitations:
+
+- One material and one defect type implemented.
+- No energies, forces, or graph datasets yet.
+- No continuous integration badge or published documentation site.
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pre-commit install
+pytest
+```
+
+Quality gates: `ruff check .`, `mypy pipeline/`, `black .`, `isort .`, and
+`pre-commit run --all-files`. CI runs these on Python 3.9, 3.10, and 3.11. See
+[`benchmarks/README.md`](benchmarks/README.md) for performance and
+[`tests/README.md`](tests/README.md) for the test suite.
 
 ## Further information
 
-- [`CHANGELOG.md`](CHANGELOG.md): change history, including what was removed
-  from the MVP and deferred to V1 and later.
-- [`tests/README.md`](tests/README.md): test structure, how to run the suite,
-  coverage, and known limitations.
-- [`outputs/RESULTS_DESCRIPTION.txt`](outputs/RESULTS_DESCRIPTION.txt):
-  description of every output file and its fields.
-
-## Development setup
-
-```bash
-git clone https://github.com/MatScience1/radiation_damage_ml.git
-cd radiation_damage_ml
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -e ".[dev]"
-pre-commit install
-```
-
-Supported interpreters: Python 3.9, 3.10, and 3.11.
-
-## Code quality
-
-```bash
-pytest                      # full test suite
-ruff check .                # lint
-mypy pipeline/              # static type check
-black .                     # formatting
-isort .                     # import ordering
-pre-commit run --all-files  # run every hook
-```
-
-Tool configuration lives in [`pyproject.toml`](pyproject.toml) (black, isort,
-ruff) and [`mypy.ini`](mypy.ini) (mypy).
-
-## Continuous integration
-
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and
-pull request to main. It executes on Python 3.9, 3.10, and 3.11, runs ruff and
-mypy, runs the test suite with coverage, and uploads coverage to Codecov.
-
-## Packaging
-
-The project is installable as a Python package.
-
-```bash
-python -m build        # build sdist and wheel into dist/
-pip install -e .       # editable install
-pip install .          # regular install
-```
-
-Installing the package exposes the `benchmark` console script.
-
-## Performance
-
-See [`benchmarks/README.md`](benchmarks/README.md). The MVP pipeline runs in
-under one second, and results are written to
-`benchmarks/benchmark_results.json`.
-
-```bash
-python benchmarks/benchmark_pipeline.py
-```
+- [`CHANGELOG.md`](CHANGELOG.md): versioned, technical change history.
+- [`tests/README.md`](tests/README.md): test layout, how to run, coverage.
+- [`benchmarks/README.md`](benchmarks/README.md): performance metrics.
+- [`outputs/RESULTS_DESCRIPTION.txt`](outputs/RESULTS_DESCRIPTION.txt): every
+  output file and its fields.

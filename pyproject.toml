@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radiation-damage-ml"
-version = "0.4.0"
+version = "0.5.0"
 description = "Pipeline for generating GNN training datasets for radiation damage prediction"
 readme = "README.md"
 requires-python = ">=3.9"
