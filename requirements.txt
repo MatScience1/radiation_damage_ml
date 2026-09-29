@@ -1,56 +1,20 @@
 # ============================================================
-# requirements.txt — Radiation Damage ML Pipeline
+# requirements.txt - Radiation Damage ML Pipeline (MVP)
 # Python >= 3.10 recommended
 # Install with:  pip install -r requirements.txt
-# For GPU builds of PyTorch, use the PyTorch index separately:
-#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 # ============================================================
+#
+# The MVP depends only on the packages below. Advanced backends
+# (LAMMPS ADP, MLIP, PyTorch Geometric, LMDB, HDF5, Ray) belong to
+# the V1+ stages and are not required to run the MVP pipeline.
 
 # --- Core scientific stack ------------------------------------
-numpy>=1.26.0,<2.0
-scipy>=1.12.0
+numpy>=1.21.0
 
-# --- Atomistic simulation ------------------------------------ 
-ase>=3.23.0                        # Atomic Simulation Environment
-pymatgen>=2024.6.10                # Crystal structure manipulation
-mp-api>=0.41.2                     # Materials Project REST API client
-spglib>=2.4.0                      # Symmetry analysis (pymatgen dep)
-seekpath>=2.1.0                    # BZ path finding
+# --- Atomistic simulation -------------------------------------
+ase>=3.22.0
 
-# --- LAMMPS Python interface ----------------------------------
-# Note: lammps must be compiled separately on the cloud instance
-# (handled by setup_env.sh). The Python bindings are installed
-# automatically when LAMMPS is built with -D PKG_PYTHON=yes.
-# lammps                           # uncomment if using pip-installable build
-
-# --- MLIP — select via MLIP_BACKEND=mace|grace|sevennet ------
-mace-torch>=0.3.6                  # MACE-MP universal MLIP (default)
-# grace-tensorpotential>=0.1.0    # GRACE: pip install git+https://github.com/ICAMS/grace-tensorpotential.git
-# sevenn>=0.9.0                   # SevenNet-0 universal MLIP
-
-# --- Graph ML ------------------------------------------------
-torch>=2.3.0                       # Install GPU build separately (see above)
-torch-geometric>=2.5.3
-torch-scatter>=2.1.2               # Install with PyG wheel index
-torch-sparse>=0.6.18               # Install with PyG wheel index
-torch-cluster>=1.6.3               # Install with PyG wheel index
-
-# --- Cloud parallelism ---------------------------------------
-ray[default]>=2.32.0               # Ray cluster / task scheduling
-ray[data]>=2.32.0                  # Ray Datasets for distributed data
-
-# --- Storage backends ----------------------------------------
-lmdb>=1.5.1                        # LMDB key-value store
-h5py>=3.11.0                       # HDF5 hierarchical data
-webdataset>=0.2.111                # WebDataset streaming tar shards
-
-# --- Utilities -----------------------------------------------
-tqdm>=4.66.4
-click>=8.1.7
-pydantic>=2.7.0
-rich>=13.7.0                       # Pretty CLI output
-python-dotenv>=1.0.1               # Load .env API keys
-
-# --- Testing / CI --------------------------------------------
-pytest>=8.2.0
-pytest-cov>=5.0.0
+# --- PyTorch storage ------------------------------------------
+# For a GPU build of PyTorch, install from the PyTorch index separately:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+torch>=1.9.0
