@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from ase import Atoms
 from ase.io import read, write
 
 from pipeline.config import FullConfig, load_config
@@ -48,11 +47,16 @@ class LocalDataMiner:
             )
 
         try:
-            atoms: Atoms = read(str(material_file))
+            atoms_or_list = read(str(material_file))
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to read structure from {material_file}: {exc}"
             ) from exc
+
+        if isinstance(atoms_or_list, list):
+            atoms = atoms_or_list[0]
+        else:
+            atoms = atoms_or_list
 
         if len(atoms) == 0:
             raise RuntimeError(

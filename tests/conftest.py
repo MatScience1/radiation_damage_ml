@@ -51,7 +51,8 @@ def aluminum_atoms() -> Atoms:
 @pytest.fixture
 def supercell_atoms(aluminum_atoms: Atoms) -> Atoms:
     """Return a 2x2x2 supercell of the aluminium structure (32 atoms)."""
-    return make_supercell(aluminum_atoms, np.diag([2, 2, 2]))
+    supercell: Atoms = make_supercell(aluminum_atoms, np.diag([2, 2, 2]))
+    return supercell
 
 
 @pytest.fixture

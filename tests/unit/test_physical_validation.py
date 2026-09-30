@@ -2,19 +2,21 @@
 
 import pytest
 import spglib
+from ase import Atoms
 
 pytestmark = pytest.mark.unit
 
 
-def _spacegroup_number(atoms) -> int:
+def _spacegroup_number(atoms: Atoms) -> int:
     """Return the spacegroup number for an Atoms object via spglib."""
     dataset = spglib.get_symmetry_dataset(
         (atoms.get_cell(), atoms.get_scaled_positions(), atoms.get_atomic_numbers()),
         symprec=1e-3,
     )
-    if isinstance(dataset, dict):
-        return int(dataset["number"])
-    return int(dataset.number)
+    number = getattr(dataset, "number", None)
+    if number is None:
+        raise RuntimeError("spglib could not determine the spacegroup")
+    return int(number)
 
 
 class TestPhysicalValidation:

@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from ase import Atoms
 from ase.io import read
 
 from pipeline.stage02_defect_engineering import SimpleDefectEngine
@@ -93,6 +94,7 @@ class TestSimpleDefectEngine:
             / f"{material_name}_vacancy.extxyz"
         )
         atoms = read(str(extxyz_file))
+        assert isinstance(atoms, Atoms)
         assert atoms.info["defect_type"] == "single_vacancy"
         assert list(atoms.info["supercell_size"]) == [2, 2, 2]
         assert "vacancy_index" in atoms.info

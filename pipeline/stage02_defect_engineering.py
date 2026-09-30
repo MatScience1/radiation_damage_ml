@@ -46,7 +46,7 @@ class SimpleDefectEngine:
         """
         try:
             matrix = np.diag(self.config.mvp.supercell_size)
-            supercell = make_supercell(atoms, matrix)
+            supercell: Atoms = make_supercell(atoms, matrix)
         except Exception as exc:
             raise RuntimeError(f"Failed to create supercell: {exc}") from exc
 

@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from ase import Atoms
 from ase.io import read
 
 from pipeline.stage01_data_mining import LocalDataMiner
@@ -33,6 +34,7 @@ class TestDataIntegrity:
         with open(defect_dir / f"{name}_vacancy.json") as handle:
             json_metadata = json.load(handle)
         atoms = read(str(defect_dir / f"{name}_vacancy.extxyz"))
+        assert isinstance(atoms, Atoms)
 
         assert atoms.info["defect_type"] == json_metadata["defect_type"]
         assert atoms.info["vacancy_index"] == json_metadata["vacancy_index"]

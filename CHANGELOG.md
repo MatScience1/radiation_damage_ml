@@ -5,6 +5,41 @@ All notable changes to this project are documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic
 Versioning. Each task in this repository increments the version.
 
+## [0.5.1] - 2026-09-29
+
+Fix mypy internal error in CI on Python 3.9 and 3.10.
+
+### Changed
+- `mypy.ini`: removed `follow_imports = skip` for `ase`, `numpy`, `torch`, and
+  `spglib`, keeping only `ignore_missing_imports`. Skipping imports can leave
+  unresolved placeholder types, which is the likely trigger of the cache
+  serialization error.
+- `pipeline/stage01_data_mining.py`: `load_structure` narrows the
+  `ase.io.read` result (`Atoms | list[Atoms]`) to a single `Atoms`.
+- `pipeline/stage02_defect_engineering.py`: `create_supercell` annotates the
+  `make_supercell` result as `Atoms`.
+- `tests/conftest.py`: `supercell_atoms` annotates the `make_supercell` result
+  as `Atoms`.
+- `tests/unit/test_physical_validation.py`: `_spacegroup_number` takes an
+  `Atoms` argument and reads the spglib dataset defensively.
+- `tests/unit/test_stage02.py` and `tests/integration/test_data_integrity.py`:
+  assert the `ase.io.read` result is `Atoms` before accessing `.info`.
+
+### Fixed
+- `mypy.ini`: added `incremental = False` to the `[mypy]` section. This avoids
+  the mypy cache serialization error, `AssertionError: Internal error:
+  unresolved placeholder type None`, observed on Python 3.9 and 3.10.
+- `.github/workflows/ci.yml`: the mypy step removes `.mypy_cache` and runs
+  `mypy pipeline/ --no-incremental --cache-dir=/dev/null --show-error-codes`,
+  so no module cache is written.
+- `.pre-commit-config.yaml`: the mypy hook runs with `--no-incremental`.
+
+### Notes
+- `mypy==1.11.2` was already pinned in `requirements-dev.txt`, keeping the CI
+  and local versions consistent.
+- `.mypy_cache/` was already present in `.gitignore`.
+- Version bumped 0.5.0 to 0.5.1.
+
 ## [0.5.0] - 2026-09-29
 
 Project narrative and README rewrite.
